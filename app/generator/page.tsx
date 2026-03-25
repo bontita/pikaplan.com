@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Container from '@/components/ui/Container';
@@ -10,6 +11,9 @@ import { ChefHat, Clock, Users, DollarSign, ShoppingCart, Download, RefreshCw } 
  * Meal Generator Page
  */
 export default function Generator() {
+  const router = useRouter();
+  const [customerAuthenticated, setCustomerAuthenticated] = useState<boolean | null>(null);
+
   const [preferences, setPreferences] = useState({
     mealType: 'balanced',
     dietaryRestrictions: [] as string[],
@@ -22,6 +26,32 @@ export default function Generator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true
+
+    const getSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session')
+        if (!isMounted) return
+
+        if (response.ok) {
+          const data = await response.json()
+          setCustomerAuthenticated(Boolean(data?.user))
+        } else {
+          setCustomerAuthenticated(false)
+        }
+      } catch {
+        if (isMounted) setCustomerAuthenticated(false)
+      }
+    }
+
+    getSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handlePreferenceChange = (key: string, value: any) => {
     setPreferences(prev => ({
@@ -40,6 +70,17 @@ export default function Generator() {
   };
 
   const generateMealPlan = async () => {
+    if (customerAuthenticated === false) {
+      setErrorMessage('Login required: Please sign in before generating a meal plan.');
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (customerAuthenticated === null) {
+      setErrorMessage('Checking login status… please wait.');
+      return;
+    }
+
     setIsGenerating(true);
     setErrorMessage(null);
 
@@ -54,14 +95,36 @@ export default function Generator() {
 
       if (response.ok && data.success) {
         setGeneratedPlan(data.plan);
-      } else {
-        throw new Error(data.error || 'Unable to fetch meal plan');
+        return;
       }
-    } catch (error) {
-      console.error('Meal plan fetch failed:', error);
-      setErrorMessage('Could not fetch meal plan. Please try again.');
 
-      // Fallback to local mock plan if needed
+      if (response.status === 401) {
+        setErrorMessage('Login required: Please sign in before generating a meal plan.');
+        return;
+      }
+
+      if (response.status === 403) {
+        setErrorMessage(data.error || 'Plan limit reached. Please upgrade your subscription.');
+        return;
+      }
+
+      throw new Error(data.error || 'Unable to fetch meal plan');
+    } catch (error: any) {
+      console.error('Meal plan fetch failed:', error);
+
+      if (error.message?.includes('plan limit')) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      if (error.message?.includes('Login required')) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      setErrorMessage('Could not fetch meal plan. Please try again or check your subscription.');
+
+      // Fallback to local mock plan if the backend AI pipeline is unavailable
       const fallbackPlan = {
         id: Date.now(),
         totalCost: Math.floor(Math.random() * 2000) + 1500,
@@ -258,6 +321,18 @@ export default function Generator() {
                     {errorMessage}
                   </p>
                 )}
+
+                {customerAuthenticated === false && (
+                  <div className="mb-4 text-center space-x-3">
+                    <a href="/api/auth/signin" className="inline-flex px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                      Login
+                    </a>
+                    <a href="/signup" className="inline-flex px-4 py-2 text-sm font-medium text-green-600 bg-green-100 rounded-lg hover:bg-green-200">
+                      Sign Up
+                    </a>
+                  </div>
+                )}
+
                 <div className="mt-8 text-center">
                   <button
                     onClick={generateMealPlan}

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { signIn, signOut } from 'next-auth/react';
+import { Menu, X, User } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 
@@ -12,6 +13,20 @@ import ThemeToggle from '@/components/ui/ThemeToggle';
  */
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+        setIsAuthenticated(Boolean(session?.user));
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -49,12 +64,44 @@ export const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Right Side - Theme Toggle + CTA Button */}
+        {/* Right Side - Theme Toggle + Auth Buttons */}
         <div className="flex items-center gap-3 md:gap-4">
           <ThemeToggle />
-          <button className="hidden md:inline-flex px-5 py-2 font-inter text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 transition-colors shadow-md hover:shadow-lg">
-            Get Started
-          </button>
+
+          {isAuthenticated === null ? (
+            <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          ) : isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard"
+                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                <User className="w-4 h-4" />
+                Dashboard
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => signIn()}
+                className="px-4 py-2 text-sm font-semibold text-green-700 bg-white border border-green-500 rounded-lg hover:bg-green-50 dark:bg-gray-800 dark:text-green-300 dark:border-green-300 transition-colors"
+              >
+                Login
+              </button>
+              <Link
+                href="/signup"
+                className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -81,9 +128,18 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
-            <button className="w-full px-4 py-2 mt-2 font-inter text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 transition-colors">
-              Get Started
+            <button
+              onClick={() => signIn()}
+              className="w-full px-4 py-2 mt-2 font-inter text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 transition-colors"
+            >
+              Login
             </button>
+            <Link
+              href="/signup"
+              className="w-full px-4 py-2 mt-2 font-inter text-sm font-semibold text-green-600 bg-white border border-green-600 rounded-lg hover:bg-green-50 dark:bg-gray-800 dark:text-green-300 dark:border-green-300 dark:hover:bg-gray-700 transition-colors"
+            >
+              Sign Up
+            </Link>
           </Container>
         </div>
       )}
