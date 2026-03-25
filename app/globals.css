@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design System Colors as CSS Variables */
+:root {
+  --color-primary-light: #22C55E;
+  --color-primary-dark: #4CAF50;
+  --color-secondary-orange: #FB923C;
+  --color-secondary-yellow: #FACC15;
+  --color-bg-light: #FFF7ED;
+  --color-bg-dark: #18181B;
+  --color-text-light: #3F3F46;
+  --color-text-dark: #FAFAFA;
+  --color-accent-red: #EF4444;
+}
+
+:root[class='dark'] {
+  color-scheme: dark;
+}
+
+/* Base Styles */
+body {
+  @apply bg-white text-gray-800 transition-colors duration-300;
+  font-family: var(--font-inter);
+}
+
+:root[class='dark'] body {
+  @apply bg-neutral-bg-dark text-neutral-text-dark;
+}
+
+/* Heading Styles */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  @apply text-4xl md:text-5xl font-bold;
+}
+
+h2 {
+  @apply text-3xl md:text-4xl font-bold;
+}
+
+h3 {
+  @apply text-2xl font-semibold;
+}
+
+/* Smooth Transitions */
+button,
+a {
+  @apply transition-all duration-200 ease-out;
+}
+
+/* Accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-offset-2 ring-primary-light;
+}
+
+:root[class='dark'] :focus-visible {
+  @apply ring-offset-neutral-bg-dark;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+:root[class='dark'] ::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
