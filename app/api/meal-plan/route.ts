@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // 🔥 STEP 1: Generate meal plan
     const response = await anthropic.messages.create({
       model: "claude-3-haiku-20240307",
-      max_tokens: 1000,
+      max_tokens: 1500,
       messages: [
         {
           role: "user",
@@ -21,15 +21,22 @@ export async function POST(req: Request) {
           Preferences: ${body.preferences}
           Goal: ${body.goal}
           
-          Return ONLY JSON.`,
+          Return ONLY a valid JSON object. No conversational text.`,
         },
       ],
     })
 
-    // 🔥 STEP 2: Extract text from Claude
-    const mealPlanText = response.content[0].text
+    // 🔥 STEP 2: Extract text from Claude SAFELY (Fixes Vercel Error)
+    let mealPlanText = ""
+    const firstContentBlock = response.content[0]
 
-    // 🔥 STEP 3: SAVE TO SUPABASE (THIS IS YOUR CODE)
+    if (firstContentBlock && firstContentBlock.type === 'text') {
+      mealPlanText = firstContentBlock.text
+    } else {
+      throw new Error("No text content returned from AI")
+    }
+
+    // 🔥 STEP 3: SAVE TO SUPABASE
     const { error } = await supabase.from("meal_plans").insert([
       {
         budget: body.budget,
